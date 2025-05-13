@@ -16,10 +16,10 @@ test: # Test
 	emrun index.html
 
 builder: builder.Dockerfile
-	docker build --tag webcm/builder --file $< --progress plain .
+	docker build --platform linux/amd64 --tag webcm/builder --file $< --progress plain .
 
 webcm.mjs: webcm.c rootfs.ext2.zz linux.bin.zz emscripten-pty.js
-	emcc webcm.c -o webcm.mjs $(EMCC_CFLAGS)
+	emcc webcm.c -o webcm.mjs $(EMCC_CFLAGS) -s WASM=1 -s EXPORTED_FUNCTIONS="['_main','_send_hex_input']" -s EXPORTED_RUNTIME_METHODS="['ccall', 'cwrap']"
 
 rootfs.ext2: rootfs.tar
 	xgenext2fs \
@@ -32,7 +32,7 @@ rootfs.ext2: rootfs.tar
 	    --tarball $< $@
 
 rootfs.tar: rootfs.Dockerfile $(SKEL_FILES)
-	docker buildx build --progress plain --output type=tar,dest=$@ --file rootfs.Dockerfile .
+	docker buildx build --platform linux/amd64 --progress plain --output type=tar,dest=$@ --file rootfs.Dockerfile .
 
 emscripten-pty.js:
 	wget -O emscripten-pty.js https://raw.githubusercontent.com/mame/xterm-pty/refs/heads/main/emscripten-pty.js
