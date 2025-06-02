@@ -1,0 +1,19 @@
+#!/bin/sh
+export TERM=xterm-256color USER=root
+link() { echo -e '\e[1;34m\e[4m' ; }
+red() { echo -e '\e[1;31m' ; }
+blue() { echo -e '\e[1;34m' ; }
+reset() { echo -e '\e[0m' ; }
+clear
+cat <<EOF
+         .                 $(red)${USER}@$(cat /etc/hostname)$(reset)
+        / \\                $(blue)os$(reset) Alpine $(cat /etc/alpine-release)
+      /    \\               $(blue)linux$(reset) $(uname -r)
+\\---/---\\  /----\\          $(blue)uptime$(reset) $(awk '{printf("%d secs\n", $1)}' /proc/uptime)
+ \\       X       \\         $(blue)mem$(reset) $(free -m | awk '/Mem:/ { printf "%dMiB / %dMiB\n", $3, $2 }')
+  \\----/  \\---/---\\        $(blue)disk$(reset) $(df -m / | awk 'NR==2 {printf "%dMiB / %dMiB\n", $3, $2}')
+       \\    / CARTESI      $(blue)emulator$(reset) $(cat /proc/device-tree/cartesi-machine/version)
+        \\ /   PLAYGROUND   $(blue)arch$(reset) $(uname -m)
+         '                 $(blue)isa$(reset) $(grep -o "rv.*" /proc/cpuinfo)
+
+EOF

@@ -1,0 +1,459 @@
+<!doctype html>  
+<html lang="en">  
+    <head>  
+        <meta charset="utf-8" />  
+        <meta name="viewport" content="width=device-width, initial-scale=1" />  
+        <title>Cartesi Playground - Web IDE</title>  
+        <meta  
+            name="description"  
+            content="Cartesi Playground - Browser-based IDE for testing Cartesi applications without local installation."  
+        />  
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />  
+        <link rel="icon" href="favicon.svg" type="image/svg+xml" />  
+        <style>  
+            html, body {  
+                margin: 0;  
+                padding: 0;  
+                height: 100%;  
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;  
+                background: #1e1e1e;  
+                color: #d4d4d4;  
+            }  
+              
+            .container {  
+                display: flex;  
+                flex-direction: column;  
+                height: 100vh;  
+            }  
+              
+            .header {  
+                background: #2d2d30;  
+                padding: 10px 20px;  
+                border-bottom: 1px solid #3e3e42;  
+                display: flex;  
+                align-items: center;  
+                gap: 15px;  
+            }  
+              
+            .header h1 {  
+                margin: 0;  
+                font-size: 18px;  
+                color: #cccccc;  
+            }  
+              
+            .controls {  
+                display: flex;  
+                gap: 10px;  
+                align-items: center;  
+            }  
+              
+            .btn {  
+                background: #0e639c;  
+                color: white;  
+                border: none;  
+                padding: 6px 12px;  
+                border-radius: 3px;  
+                cursor: pointer;  
+                font-size: 13px;  
+            }  
+              
+            .btn:hover {  
+                background: #1177bb;  
+            }  
+              
+            .btn:disabled {  
+                background: #666;  
+                cursor: not-allowed;  
+            }  
+              
+            .btn.danger {  
+                background: #d73a49;  
+            }  
+              
+            .btn.danger:hover {  
+                background: #e53e3e;  
+            }  
+              
+            .status {  
+                padding: 4px 8px;  
+                border-radius: 3px;  
+                font-size: 12px;  
+                font-weight: bold;  
+            }  
+              
+            .status.loading {  
+                background: #ffa500;  
+                color: #000;  
+            }  
+              
+            .status.ready {  
+                background: #28a745;  
+                color: #fff;  
+            }  
+              
+            .status.error {  
+                background: #dc3545;  
+                color: #fff;  
+            }  
+              
+            .main-content {  
+                display: flex;  
+                flex: 1;  
+                overflow: hidden;  
+            }  
+              
+            .sidebar {  
+                width: 300px;  
+                background: #252526;  
+                border-right: 1px solid #3e3e42;  
+                display: flex;  
+                flex-direction: column;  
+            }  
+              
+            .input-section {  
+                padding: 15px;  
+                border-bottom: 1px solid #3e3e42;  
+            }  
+              
+            .input-section h3 {  
+                margin: 0 0 10px 0;  
+                font-size: 14px;  
+                color: #cccccc;  
+            }  
+              
+            .input-group {  
+                margin-bottom: 15px;  
+            }  
+              
+            .input-group label {  
+                display: block;  
+                margin-bottom: 5px;  
+                font-size: 12px;  
+                color: #cccccc;  
+            }  
+              
+            .input-group input, .input-group textarea, .input-group select {  
+                width: 100%;  
+                padding: 6px;  
+                background: #3c3c3c;  
+                border: 1px solid #5a5a5a;  
+                border-radius: 3px;  
+                color: #d4d4d4;  
+                font-size: 12px;  
+                box-sizing: border-box;  
+            }  
+              
+            .input-group textarea {  
+                height: 80px;  
+                resize: vertical;  
+                font-family: 'Courier New', monospace;  
+            }  
+              
+            .output-section {  
+                flex: 1;  
+                padding: 15px;  
+                overflow-y: auto;  
+            }  
+              
+            .output-section h3 {  
+                margin: 0 0 10px 0;  
+                font-size: 14px;  
+                color: #cccccc;  
+            }  
+              
+            .output-log {  
+                background: #1e1e1e;  
+                border: 1px solid #3e3e42;  
+                border-radius: 3px;  
+                padding: 10px;  
+                height: 200px;  
+                overflow-y: auto;  
+                font-family: 'Courier New', monospace;  
+                font-size: 12px;  
+                white-space: pre-wrap;  
+            }  
+              
+            .terminal-container {  
+                flex: 1;  
+                background: #000;  
+                position: relative;  
+            }  
+              
+            .terminal-overlay {  
+                position: absolute;  
+                top: 0;  
+                left: 0;  
+                right: 0;  
+                bottom: 0;  
+                background: rgba(0, 0, 0, 0.8);  
+                display: flex;  
+                align-items: center;  
+                justify-content: center;  
+                color: #fff;  
+                font-size: 16px;  
+                z-index: 10;  
+            }  
+              
+            .hidden {  
+                display: none !important;  
+            }  
+        </style>  
+    </head>  
+    <body>  
+        <div class="container">  
+            <!-- Header with main controls -->  
+            <div class="header">  
+                <h1>Cartesi Playground</h1>  
+                <div class="controls">  
+                    <button id="initBtn" class="btn">Initialize Machine</button>  
+                    <button id="restartBtn" class="btn" disabled>Restart</button>  
+                    <button id="destroyBtn" class="btn danger" disabled>Destroy</button>  
+                    <div id="status" class="status loading">Ready to initialize</div>  
+                </div>  
+            </div>  
+              
+            <div class="main-content">  
+                <!-- Sidebar with input controls -->  
+                <div class="sidebar">  
+                    <div class="input-section">  
+                        <h3>Send Input</h3>  
+                          
+                        <div class="input-group">  
+                            <label for="inputType">Input Type:</label>  
+                            <select id="inputType">  
+                                <option value="advance">Advance</option>  
+                                <option value="inspect">Inspect</option>  
+                            </select>  
+                        </div>  
+                          
+                        <div class="input-group">  
+                            <label for="hexInput">Input (Hex):</label> 
+                            <textarea id="hexInput"></textarea>  
+                        </div>  
+                          
+                        <div class="input-group">  
+                            <label for="textInput">Input (Text):</label>  
+                            <textarea id="textInput"></textarea>  
+                        </div>  
+                          
+                        <button id="sendBtn" class="btn" disabled>Send Input</button>  
+                    </div>  
+                      
+                    <div class="output-section">  
+                        <h3>Machine Outputs</h3>  
+                        <div id="outputLog" class="output-log"></div>  
+                        <button id="clearLogBtn" class="btn" style="margin-top: 10px;">Clear Log</button>  
+                    </div>  
+                </div>  
+                  
+                <!-- Main terminal -->  
+                <div class="terminal-container">  
+                    <div id="terminalOverlay" class="terminal-overlay">  
+                        <div>Machine not initialized. Click "Initialize Machine" to start.</div>  
+                    </div>  
+                    <div id="terminal"></div>  
+                </div>  
+            </div>  
+        </div>  
+  
+        <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>  
+        <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>  
+        <script type="module">  
+            // Application state  
+            let machineState = 'uninitialized'; // uninitialized, loading, ready, error  
+            let Module = null;  
+              
+            // DOM elements  
+            const initBtn = document.getElementById('initBtn');  
+            const restartBtn = document.getElementById('restartBtn');  
+            const destroyBtn = document.getElementById('destroyBtn');  
+            const sendBtn = document.getElementById('sendBtn');  
+            const clearLogBtn = document.getElementById('clearLogBtn');  
+            const status = document.getElementById('status');  
+            const hexInput = document.getElementById('hexInput');  
+            const textInput = document.getElementById('textInput');  
+            const inputType = document.getElementById('inputType');  
+            const outputLog = document.getElementById('outputLog');  
+            const terminalOverlay = document.getElementById('terminalOverlay');  
+              
+            // Terminal setup  
+            const terminal = new Terminal({  
+                fontFamily: "monospace",  
+                fontSize: 14,  
+                fontWeight: 400,  
+            });  
+            terminal.open(document.getElementById('terminal'));  
+              
+            const fitAddon = new FitAddon.FitAddon();  
+            terminal.loadAddon(fitAddon);  
+            fitAddon.fit();  
+              
+            new ResizeObserver(() => {  
+                fitAddon.fit();  
+            }).observe(document.getElementById('terminal'));  
+              
+            // Set initial status  
+            updateStatus('uninitialized', 'Ready to initialize');  
+              
+            // Callback to receive machine outputs  
+            window.onMachineOutput = function(reason, text, data) {  
+                const timestamp = new Date().toLocaleTimeString();  
+                const reasonText = reason === 0 ? 'OUTPUT' : reason === 1 ? 'REPORT' : 'PROGRESS';  
+                  
+                outputLog.textContent += `[${timestamp}] ${reasonText}: ${text}\n`;  
+                outputLog.scrollTop = outputLog.scrollHeight;  
+                  
+                // Also show in terminal  
+                terminal.write(`\r\n[${reasonText}] ${text}\r\n`);  
+            };  
+              
+            // Function to update status  
+            function updateStatus(state, message) {  
+                machineState = state;  
+                status.textContent = message;  
+                status.className = `status ${state}`;  
+                  
+                // Update buttons  
+                initBtn.disabled = state === 'loading' || state === 'ready';  
+                restartBtn.disabled = state !== 'ready';  
+                destroyBtn.disabled = state === 'uninitialized' || state === 'loading';  
+                sendBtn.disabled = state !== 'ready';  
+                  
+                // Show/hide terminal overlay  
+                if (state === 'ready') {  
+                    terminalOverlay.classList.add('hidden');  
+                } else {  
+                    terminalOverlay.classList.remove('hidden');  
+                    if (state === 'loading') {  
+                        terminalOverlay.innerHTML = '<div>Initializing machine...</div>';  
+                    } else if (state === 'error') {  
+                        terminalOverlay.innerHTML = '<div>Machine error. Try restarting.</div>';  
+                    }  
+                }  
+            }  
+              
+            // Function to convert text to hex  
+            function textToHex(text) {  
+                return '0x' + Array.from(new TextEncoder().encode(text))  
+                    .map(b => b.toString(16).padStart(2, '0'))  
+                    .join('');  
+            }  
+              
+            // Main machine loop with error handling  
+            function machineLoop() {  
+                if (!Module || machineState !== 'ready') return;  
+                  
+                try {  
+                    const result = Module.ccall('process_cycle', 'number', [], []);  
+                      
+                    switch (result) {  
+                        case 1: // Continue processing  
+                            setTimeout(machineLoop, 0);  
+                            break;  
+                        case 2: // Waiting for input  
+                            // Machine is ready to receive input  
+                            break;  
+                        case 0: // Machine stopped  
+                            updateStatus('error', 'Machine stopped');  
+                            break;  
+                        default: // Error  
+                            console.error(`Machine error: ${result}`);  
+                            updateStatus('error', `Machine error: ${result}`);  
+                    }  
+                } catch (error) {  
+                    console.error('Exception in machine loop:', error);  
+                    updateStatus('error', 'Machine crashed');  
+                }  
+            }  
+              
+            // Event listeners  
+            initBtn.addEventListener('click', async () => {  
+                updateStatus('loading', 'Initializing...');  
+                  
+                try {  
+                    // Load WebAssembly module  
+                    const initEmscripten = (await import('./webcm.mjs')).default;  
+                    Module = await initEmscripten();  
+                      
+                    // Initialize machine with async support  
+                    const result = await Module.ccall('init_machine', 'number', [], [], { async: true });  
+                      
+                    if (result === 0) {  
+                        updateStatus('ready', 'Ready');  
+                        terminal.write('Cartesi Machine initialized successfully!\r\n');  
+                        machineLoop();  
+                    } else {  
+                        updateStatus('error', `Initialization error: ${result}`);  
+                    }  
+                } catch (error) {  
+                    updateStatus('error', 'Loading error');  
+                    console.error('Error:', error);  
+                }  
+            });  
+              
+            restartBtn.addEventListener('click', async () => {  
+                if (Module) {  
+                    Module.ccall('destroy_machine', 'void', [], []);  
+                    updateStatus('loading', 'Restarting...');  
+                      
+                    setTimeout(async () => {  
+                        const result = await Module.ccall('init_machine', 'number', [], [], { async: true });  
+                        if (result === 0) {  
+                            updateStatus('ready', 'Ready');  
+                            terminal.clear();  
+                            terminal.write('Machine restarted!\r\n');  
+                            machineLoop();  
+                        } else {  
+                            updateStatus('error', `Restart error: ${result}`);  
+                        }  
+                    }, 100);  
+                }  
+            });  
+              
+            destroyBtn.addEventListener('click', () => {  
+                if (Module) {  
+                    Module.ccall('destroy_machine', 'void', [], []);  
+                    updateStatus('uninitialized', 'Not initialized');  
+                    terminal.clear();  
+                    outputLog.textContent = '';  
+                }  
+            });  
+                 
+              
+            sendBtn.addEventListener('click', () => {  
+                if (!Module || machineState !== 'ready') return;  
+                  
+                let input = hexInput.value.trim();  
+                  
+                // If no hex input but there's text, convert it  
+                if (!input && textInput.value.trim()) {  
+                    input = textToHex(textInput.value.trim());  
+                    hexInput.value = input;  
+                }  
+                  
+                if (!input) {  
+                    alert('Enter an input in hex or text');  
+                    return;  
+                }  
+                  
+                const result = Module.ccall('send_input', 'number', ['string'], [input]);  
+                if (result === 0) {  
+                    terminal.write(`Input sent: ${input}\r\n`);  
+                    // Clear inputs after successful send  
+                    hexInput.value = '';  
+                    textInput.value = '';  
+                    machineLoop();  
+                } else {  
+                    alert(`Error sending input: ${result}`);  
+                }  
+            });  
+              
+            clearLogBtn.addEventListener('click', () => {  
+                outputLog.textContent = '';  
+            });  
+              
+            // Auto-resize terminal  
+            new ResizeObserver(() => fitAddon.fit()).observe(document.getElementById('terminal'));  
+        </script>  
+    </body>  
+</html>

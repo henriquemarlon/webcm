@@ -1,0 +1,14 @@
+*.zz
+*.bin
+*.ext2
+*.tar
+tasks.TODO
+emscripten-pty.js
+
+# Large files
+rootfs.tar
+rootfs.ext2
+rootfs.ext2.zz
+linux.bin
+linux.bin.zz
+webcm.wasm
